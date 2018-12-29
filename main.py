@@ -32,7 +32,7 @@ res_im = res_im.astype(np.float32)
 
 #Part 3.2
 #   Feature extraction
-resnet.resnet50()
+model = resnet.resnet50()
 #we append an augmented dimension to indicate batch_size, which is one
 res_im = np.reshape(res_im, [1, 224, 224, 3])
 # model takes as input images of size [batch_size, 3, im_height, im_width]
@@ -44,7 +44,8 @@ feature_vector = model(res_im)
 # convert the features of type torch.FloatTensor to a Numpy array
 # so that you can either work with them within the sklearn environment
 # or save them as .mat files
-feature_vector = feature_vector.numpy()
+feature_vector = feature_vector.data.cpu().numpy()
+#print(type(feature_vector))
 
 #for display and print
 """print(res_im.shape)
