@@ -5,16 +5,23 @@ from PIL import Image
 import cv2
 import torch
 import sys
+import os
 sys.path.insert(0, 'data/')
 
 import resnet
+
+rootDir = 'data/train/'
+for dirName, subdirList, fileList in os.walk(rootDir):
+    print('Found directory: %s' % dirName)
+    for fname in fileList:
+        print('\t%s' % fname)
 
 #image = cv2.imread('data/train/n01615121/n01615121_866.jpeg',1)
 #cv2.imshow('image',image)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-image = Image.open('data/train/n01615121/n01615121_1705.jpeg').convert('RGB')       #load an image
+"""image = Image.open('data/train/n01615121/n01615121_1705.jpeg').convert('RGB')       #load an image
 image_arr = np.asarray(image)                                                       #convert to a numpy array
 org_size = image.size
 max_dim = max(org_size[0], org_size[1])
@@ -45,7 +52,7 @@ feature_vector = model(res_im)
 # so that you can either work with them within the sklearn environment
 # or save them as .mat files
 feature_vector = feature_vector.data.cpu().numpy()
-#print(type(feature_vector))
+#print(type(feature_vector))"""
 
 #for display and print
 """print(res_im.shape)
