@@ -91,3 +91,41 @@ pickle.dump(clf, open(filename, 'wb'))
  
 #Part 5
 rootDirTest = 'data/test/'
+
+image = cv2.imread(rootDirTest+ '/' + 'images/0.jpeg')
+edge_detection = cv2.ximgproc.createStructuredEdgeDetection(rootDirTest + "model.yml.gz") # SHOULD THIS MODEL BE OUR MODEL ?????!!!!
+
+rgb_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+edges = edge_detection.detectEdges(np.float32(rgb_im) / 255.0)
+
+orimap = edge_detection.computeOrientation(edges)
+edges = edge_detection.edgesNms(edges, orimap)
+
+edge_boxes = cv2.ximgproc.createEdgeBoxes()
+edge_boxes.setMaxBoxes(50)
+boxes = edge_boxes.getBoundingBoxes(edges, orimap)
+
+for b in boxes:
+        x, y, w, h = b
+        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+
+cv2.imshow("edges", edges)
+cv2.imshow("edgeboxes", image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+"""alpha = 0.65
+beta = 0.75
+eta = 1
+minScore = 0.01
+maxBoxes = 10000
+edgeMinMag = 0.1
+edgeMergeThr = 0.5
+clusterMinMag = 0.5
+maxAspectRatio = 3
+minBoxArea = 1000
+gamma = 2
+kappa = 1.5  
+
+retval = cv2.ximgproc.createEdgeBoxes( alpha, beta, eta, minScore, maxBoxes, edgeMinMag, edgeMergeThr, clusterMinMag, maxAspectRatio, minBoxArea, gamma, kappa)
+print(retval)"""
