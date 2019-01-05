@@ -83,7 +83,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 #Part 4 Training SVM
 
 # Must install the pip install -U scikit-learn to run this 
-clf = svm.SVC(gamma='linear')
+clf = svm.SVC(gamma='scale')
 clf.fit(t_feature_vectors, t_class_names)  
 #Exporting The genereted SVM file just in case, may be its unneccessary later
 filename = 'machine.svm'
