@@ -121,13 +121,15 @@ for i in range(1):
     edge_boxes = cv2.ximgproc.createEdgeBoxes()
     edge_boxes.setMaxBoxes(50)
     boxes = edge_boxes.getBoundingBoxes(edges, orimap)
-
+    
+    """
     for b in boxes:
         x, y, w, h = b
         cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
     cv2.imshow("edgeboxes", image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    """
     
 
     pil_image = Image.open(rootDirTest + 'images/' + str(i) + '.jpeg').convert('RGB')
@@ -138,6 +140,7 @@ for i in range(1):
     
         # Repeat same preprocessing in Part 3
         subimage_b = pil_image.crop((x, y, x + w, y + h))
+        # subimage_b.show()
         feature_vector = preprocessImage(subimage_b)
         test_features_i.append(feature_vector)
 
@@ -154,6 +157,6 @@ for i in range(1):
     best_prediction_index = np.unravel_index(predictions_i.argmax(), predictions_i.shape)
     test_predictions.append(best_prediction_index)
 
-test_predictions = np.array(test_predictions)
+test_predictions = np.asarray(test_predictions)
 print(test_predictions)
 print(test_predictions.shape)
