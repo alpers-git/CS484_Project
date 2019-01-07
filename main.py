@@ -30,7 +30,7 @@ t_class_names = []
 t_feature_vectors = []
 
 #Part 3.1
-#   Data Reading
+#Data Reading
 #Getting the training data
 #Can be converted to the function
 for dirName, subdirList, fileList in os.walk(rootDir):
@@ -39,7 +39,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
     print('\t%s' % class_name) 
     for fname in fileList:
         #print('\t%s' % fname) 
-        image = Image.open(dirName+ '/' +fname).convert('RGB')    
+        image = Image.open(dirName + '/' + fname).convert('RGB')    
         #print(image)
         image_arr = np.asarray(image)   #convert to a numpy array
         rgb_img = cv2.cvtColor(image_arr, cv2.COLOR_BGR2RGB)  #do this or displayed img will have color channels in BGR order   
@@ -53,8 +53,8 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
         padded_size = (max_dim, max_dim)
         padded_im = Image.new("RGB", padded_size)
-        padded_im.paste(image, ( (int)((padded_size[0] - org_size[0])/2), 
-                                (int)((padded_size[1] - org_size[1])/2) ))                  #pastes image in middle of a black image
+        padded_im.paste(image, ((int)((padded_size[0] - org_size[0])/2), 
+                                (int)((padded_size[1] - org_size[1])/2)))                  #pastes image in middle of a black image
 
         padded_im = np.asarray(padded_im)
         res_im = cv2.resize(padded_im, dsize=(224, 224), interpolation=cv2.INTER_LANCZOS4)  #resizes to 224x224
@@ -62,7 +62,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         res_im = res_im.astype(np.float32)
         
         #Part 3.2
-        #   Feature extraction
+        #Feature extraction
         #model = resnet.resnet50()
         #we append an augmented dimension to indicate batch_size, which is one
         res_im = np.reshape(res_im, [1, 224, 224, 3])
