@@ -1,40 +1,26 @@
-#need to install opencv and pytorch, sklearn from the anaconda cli for desired environment 
-
-#Image Processing etc.. Related imports
 import numpy as np
-np.set_printoptions(threshold=np.nan)
-
 import PIL
 from PIL import Image
 import cv2
 import torch
-
-#Imports for data reading
 import sys
 import os
-sys.path.insert(0, 'data/')
-
-#ResNet Model 
-import resnet
-
-#Sklearn releted imports
 import sklearn
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import pickle
 
+sys.path.insert(0, 'data/')
+import resnet
 
-def preprocessImage(image): # PIL Image
-    image_arr = np.asarray(image)   # convert to a numpy array
-    # rgb_img = cv2.cvtColor(image_arr, cv2.COLOR_BGR2RGB)  # do this or displayed img will have color channels in BGR order   
-                            
+def preprocessImage(image): # input is of type PIL Image
+    image_arr = np.asarray(image) # convert to a numpy array                            
     org_size = image_arr.shape
     max_dim = max(org_size[0], org_size[1])
 
     padded_size = (max_dim, max_dim)
     padded_im = Image.new("RGB", padded_size)
     padded_im.paste(image, ((int)((padded_size[0] - org_size[0])/2), (int)((padded_size[1] - org_size[1])/2))) #pastes image in middle of a black image
-
     padded_im = np.asarray(padded_im)
     res_im = cv2.resize(padded_im, dsize=(224, 224), interpolation=cv2.INTER_LANCZOS4)  # resize to 224x224 using Lanczos interpolation
     res_im = np.asarray(res_im)
@@ -42,7 +28,6 @@ def preprocessImage(image): # PIL Image
     
     # Part 3.2
     # Feature extraction
-    # model = resnet.resnet50()
     # append a dimension to indicate batch_size, which is one
     res_im = np.reshape(res_im, [1, 224, 224, 3])
     # model accepts input images of size [batch_size, 3, im_height, im_width]
@@ -63,9 +48,17 @@ rootDir = 'data/train/'
 model = resnet.resnet50()
 model.eval()
 
-# holds the class names for each picture from the parent folder 
+# Test data
+test_data = []
+test_data_file = open("data/test/bounding_box.txt", "r")
+for line in test_data_file:
+    test_data.append(line.rstrip('\n').split(","))
+test_data_file.close()
+test_data = np.asarray(test_data)
+test_labels = test_data[:, 0]
+test_proposals = test_data[:, 1:].astype(np.int)
+
 t_class_names = []
-# holds the feature vectors generated from the ResNet50 Model
 t_feature_vectors = []
 
 # Part 3.1
@@ -86,7 +79,10 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         t_feature_vectors.append(feature_vector)
 
 # Part 4: Training one-vs-all classifiers
-# TODO: Normalize feature vectors
+# Normalize feature vectors
+#scaler = StandardScaler() # (x - mean) / stddev
+#scaler.fit(t_feature_vectors)
+#t_feature_vectors = scaler.transform(t_feature_vectors)
 
 # Train one-vs-all classifiers for each object type
 bsvm = []
@@ -95,7 +91,6 @@ for i in unique_labels:
     # Set labels belonging to class i to 1, rest to 0
     new_train_labels = np.asarray(t_class_names)
     new_train_labels[new_train_labels != i] = 0
-    new_train_labels[new_train_labels == i] = 1
 
     # Train binary SVM
     # TODO: Experiment with gamma value
@@ -103,14 +98,18 @@ for i in unique_labels:
     bsvm_i.fit(t_feature_vectors, new_train_labels)
     bsvm.append(bsvm_i)
 
-bsvm = np.asarray(bsvm)
 print("Training complete. Starting test phase...")
 
 # Part 5: Testing
+# Read test labels & proposals
+test_data_file = open("/test/bounding_box.txt", "r")
+test_data = test_data_file.read().splitlines()
+test_data_file.close()
+
 rootDirTest = 'data/test/'
 edge_detection = cv2.ximgproc.createStructuredEdgeDetection(rootDirTest + "model.yml.gz")
 test_predictions = []
-for i in range(1):
+for i in range(10):
     print("Test image " + str(i))
     # 5.1: Create edge boxes for each test image
     image = cv2.imread(rootDirTest + 'images/' + str(i) + '.jpeg')    
@@ -122,15 +121,12 @@ for i in range(1):
     edge_boxes.setMaxBoxes(50)
     boxes = edge_boxes.getBoundingBoxes(edges, orimap)
     
-    """
-    for b in boxes:
-        x, y, w, h = b
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-    cv2.imshow("edgeboxes", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    """
-    
+    #for b in boxes:
+    #    x, y, w, h = b
+    #    cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+    #cv2.imshow("edgeboxes", image)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()    
 
     pil_image = Image.open(rootDirTest + 'images/' + str(i) + '.jpeg').convert('RGB')
     test_features_i = []
@@ -146,17 +142,20 @@ for i in range(1):
 
     test_features_i = np.asarray(test_features_i)
 
+    # Normalize features
+    #sc = StandardScaler() # (x - mean) / stddev
+    #sc.fit(test_features_i)
+    #test_features_i = sc.transform(test_features_i)
+
     # 5.2: Localization result
     predictions_i = []
-    for svm in bsvm:
-        preds = svm.predict_proba(test_features_i)
-        predictions_i.append(preds)
-    predictions_i = np.array(predictions_i)
-
-    print(predictions_i)
-    best_prediction_index = np.unravel_index(predictions_i.argmax(), predictions_i.shape)
-    test_predictions.append(best_prediction_index)
+    for j in range(len(bsvm)):
+        preds = bsvm[j].predict_proba(test_features_i)
+        predictions_i.append(preds[:, 1])
+    
+    predictions_i = np.asarray(predictions_i)
+    best_prediction = np.unravel_index(np.argmax(predictions_i, axis=None), predictions_i.shape)
+    test_predictions.append(best_prediction)
 
 test_predictions = np.asarray(test_predictions)
-print(test_predictions)
-print(test_predictions.shape)
+print(test_predictions[:,0])
