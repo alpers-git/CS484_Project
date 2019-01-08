@@ -63,21 +63,23 @@ def unionArea(proposal, truth):
 def localizationAccuracy(proposal, truth):
     return intersectionArea(proposal, truth) / float(unionArea(proposal, truth))
 
-"""
+def confusionMatrix(predictions, truth):
+    confusion_matrix = {"tp": 0, "tn": 0, "fp": 0, "fn": 0}
+    for i in range(len(truth)):
+        if truth[i] == 1 and predictions[i] == 1: # tp
+            confusion_matrix["tp"] = confusion_matrix["tp"] + 1
+        elif truth[i] == 0 and predictions[i] == 0: # tn
+            confusion_matrix["tn"] = confusion_matrix["tn"] + 1
+        elif truth[i] == 0 and predictions[i] == 1: # fp
+            confusion_matrix["fp"] = confusion_matrix["fp"] + 1
+        elif truth[i] == 1 and predictions[i] == 0: # fn
+            confusion_matrix["fn"] = confusion_matrix["fn"] + 1
+    return confusion_matrix
+
 # The sample train data, this must be converted to the original directory after all process finished
 rootDir = 'data/train/'
 model = resnet.resnet50()
 model.eval()
-
-# Test data
-test_data = []
-test_data_file = open("data/test/bounding_box.txt", "r")
-for line in test_data_file:
-    test_data.append(line.rstrip('\n').split(","))
-test_data_file.close()
-test_data = np.asarray(test_data)
-test_labels = test_data[:, 0]
-test_proposals = test_data[:, 1:].astype(np.int)
 
 t_class_names = []
 t_feature_vectors = []
@@ -175,5 +177,26 @@ for i in range(10):
     test_predictions.append(best_prediction)
 
 test_predictions = np.asarray(test_predictions)
-print(test_predictions[:,0])
-"""
+
+# Part 6: Validation
+# Read test labels
+test_data = []
+test_data_file = open("data/test/bounding_box.txt", "r")
+for line in test_data_file:
+    test_data.append(line.rstrip('\n').split(","))
+test_data_file.close()
+test_data = np.asarray(test_data)
+test_labels = test_data[:, 0]
+test_proposals = test_data[:, 1:].astype(np.int)
+
+
+# Validation
+all_classes = unique_labels
+
+correct_labels = 0
+for i in range(len(test_predictions)):
+    prediction = test_predictions[i]
+    label_p = prediction[0]
+    proposal_p = prediction[1:]
+    if label_p == test_labels[i]:
+        correct_labels += 1
