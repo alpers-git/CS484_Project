@@ -122,15 +122,10 @@ for i in unique_labels:
 print("Training complete. Starting test phase...")
 
 # Part 5: Testing
-# Read test labels & proposals
-test_data_file = open("/test/bounding_box.txt", "r")
-test_data = test_data_file.read().splitlines()
-test_data_file.close()
-
 rootDirTest = 'data/test/'
 edge_detection = cv2.ximgproc.createStructuredEdgeDetection(rootDirTest + "model.yml.gz")
 test_predictions = []
-for i in range(10):
+for i in range(1):
     print("Test image " + str(i))
     # 5.1: Create edge boxes for each test image
     image = cv2.imread(rootDirTest + 'images/' + str(i) + '.jpeg')    
@@ -152,12 +147,8 @@ for i in range(10):
     pil_image = Image.open(rootDirTest + 'images/' + str(i) + '.jpeg').convert('RGB')
     test_features_i = []
     for b in boxes:
-        x, y, w, h = b
-        # cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-    
-        # Repeat same preprocessing in Part 3
+        x, y, w, h = b    
         subimage_b = pil_image.crop((x, y, x + w, y + h))
-        # subimage_b.show()
         feature_vector = preprocessImage(subimage_b)
         test_features_i.append(feature_vector)
 
@@ -189,14 +180,42 @@ test_data = np.asarray(test_data)
 test_labels = test_data[:, 0]
 test_proposals = test_data[:, 1:].astype(np.int)
 
-
-# Validation
+# Validation statistics 1: Confusion matrix, precision, recall, f-score
 all_classes = unique_labels
+statistics = []
+for i in range(len(all_classes)):
+    new_predictions = test_predictions[:, 0]
+    new_predictions[new_predictions != i] = 0
+    new_predictions[new_predictions == i] = 1
 
-correct_labels = 0
+    new_truth = test_labels
+    new_truth[new_truth != all_classes[i]] = 0
+    new_truth[new_truth == all_classes[i]] = 1
+    
+    confusion_matrix = confusionMatrix(new_predictions, new_truth)
+    recall = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fn"])
+    precision = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fp"])
+    f_score = 2 * recall * precision / float(recall + precision)
+    statistics.append([confusion_matrix, precision, recall, f_score])
+
+# Validation statistics 2: Overall Accuracy & Localization Accuracy
+correct_label_count = 0
+localization_accuracies = []
 for i in range(len(test_predictions)):
     prediction = test_predictions[i]
-    label_p = prediction[0]
-    proposal_p = prediction[1:]
-    if label_p == test_labels[i]:
-        correct_labels += 1
+    label_predicted = prediction[0]
+    proposal = prediction[1:]
+
+    proposal_reformatted = [proposal[0], proposal[1], proposal[2] - proposal[0], proposal[3] - proposal[1]]
+    localization_accuracy = localizationAccuracy(proposal_reformatted, test_proposals[i])
+    localization_accuracies.append(localization_accuracy)
+
+    if label_predicted == test_labels[i]:
+        correct_label_count += 1
+
+overall_accuracy = correct_label_count / float(len(test_predictions))
+localization_accuracies = np.asarray(localization_accuracies)
+
+print(statistics)
+print(overall_accuracy)
+print(localization_accuracies)
