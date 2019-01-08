@@ -6,7 +6,6 @@ import torch
 import sys
 import os
 import sklearn
-from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import pickle
 
@@ -43,6 +42,28 @@ def preprocessImage(image): # input is of type PIL Image
     
     return feature_vector
 
+def intersectionArea(proposal, truth):
+    rect_p = (proposal[0], proposal[1], proposal[0] + proposal[2], proposal[1] + proposal[3])
+    rect_t = (truth[0], truth[1], truth[0] + truth[2], truth[1] + truth[3])
+
+    mmdif_x = min(rect_p[2], rect_t[2]) - max(rect_p[0], rect_t[0])
+    mmdif_y = min(rect_p[3], rect_t[3]) - max(rect_p[1], rect_t[1])
+
+    if mmdif_x > 0 and mmdif_y > 0:
+        return mmdif_x * mmdif_y
+    else:
+        return 0
+
+def unionArea(proposal, truth):
+    rect_p = (proposal[0], proposal[1], proposal[0] + proposal[2], proposal[1] + proposal[3])
+    rect_t = (truth[0], truth[1], truth[0] + truth[2], truth[1] + truth[3])
+
+    return abs(rect_p[2] - rect_p[0]) * abs(rect_p[3] - rect_p[1]) + abs(rect_t[2] - rect_t[0]) * abs(rect_t[3] - rect_t[1]) - intersectionArea(proposal, truth)
+
+def localizationAccuracy(proposal, truth):
+    return intersectionArea(proposal, truth) / float(unionArea(proposal, truth))
+
+"""
 # The sample train data, this must be converted to the original directory after all process finished
 rootDir = 'data/train/'
 model = resnet.resnet50()
@@ -80,9 +101,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
 # Part 4: Training one-vs-all classifiers
 # Normalize feature vectors
-#scaler = StandardScaler() # (x - mean) / stddev
-#scaler.fit(t_feature_vectors)
-#t_feature_vectors = scaler.transform(t_feature_vectors)
+t_feature_vectors = (t_feature_vectors - np.mean(t_feature_vectors, axis = 0, dtype=np.float32)) / np.std(t_feature_vectors, axis = 0, dtype=np.float32)
 
 # Train one-vs-all classifiers for each object type
 bsvm = []
@@ -143,9 +162,7 @@ for i in range(10):
     test_features_i = np.asarray(test_features_i)
 
     # Normalize features
-    #sc = StandardScaler() # (x - mean) / stddev
-    #sc.fit(test_features_i)
-    #test_features_i = sc.transform(test_features_i)
+    test_features_i = (test_features_i - np.mean(test_features_i, axis = 0, dtype=np.float32)) / np.std(test_features_i, axis = 0, dtype=np.float32)
 
     # 5.2: Localization result
     predictions_i = []
@@ -159,3 +176,4 @@ for i in range(10):
 
 test_predictions = np.asarray(test_predictions)
 print(test_predictions[:,0])
+"""
