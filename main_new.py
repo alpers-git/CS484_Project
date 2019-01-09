@@ -220,11 +220,6 @@ for i in range(len(test_predictions)):
     label_predicted = prediction[0]
     object_proposal = object_proposals_predicted[i, prediction[1]]
 
-    print(object_proposal)
-    print(type(object_proposal))
-    print(test_proposals[i] )
-    print(type(test_proposals[i]))
-
     localization_accuracy = localizationAccuracy(object_proposal, test_proposals[i])
     localization_accuracies.append(localization_accuracy)
 
