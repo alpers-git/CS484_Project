@@ -14,7 +14,7 @@ import pickle
 
 sys.path.insert(0, 'data/')
 import resnet
-
+f= open("output.txt","w+")
 def preprocessImage(image): # input is of type PIL Image
     image_arr = np.asarray(image) # convert to a numpy array                            
     org_size = image_arr.shape
@@ -180,11 +180,13 @@ for i in range(99):
     for j in range(len(bsvm)):
         preds = bsvm[j].predict_proba(test_features_i)
         print(preds[:, 1])
+        f.write(preds[:, 1]+"\n")
         predictions_i.append(preds[:, 1])
-    
+     
     predictions_i = np.asarray(predictions_i)
     best_prediction = np.unravel_index(np.argmax(predictions_i, axis=None), predictions_i.shape)
     print(best_prediction)
+    f.write(best_prediction+"\n")
     test_predictions.append(best_prediction)
 
 
@@ -253,3 +255,4 @@ print("Overall Accuracy: ")
 print(overall_accuracy)
 print("Localization Accuracies: ")
 print(localization_accuracies)
+f.close()   
