@@ -145,6 +145,7 @@ test_predictions = []
 object_proposals_predicted = []
 for i in range(99):
     print("Test image " + str(i))
+    f.write("Test image " + str(i))
     # 5.1: Create edge boxes for each test image
     image = cv2.imread(rootDirTest + 'images/' + str(i) + '.jpeg')    
     rgb_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
