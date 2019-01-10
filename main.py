@@ -6,11 +6,8 @@ import torch
 import sys
 import os
 import sklearn
-
 from sklearn.svm import SVC
 import pickle
-
-
 
 sys.path.insert(0, 'data/')
 import resnet
@@ -27,16 +24,11 @@ def preprocessImage(image): # input is of type PIL Image
     res_im = cv2.resize(padded_im, dsize=(224, 224), interpolation=cv2.INTER_LANCZOS4)  # resize to 224x224 using Lanczos interpolation
     res_im = np.asarray(res_im)
    
-   
- 
-   
-   
     res_im = res_im /255
     subs_vals = np.array([0.485, 0.456, 0.406])
     res_im = res_im - subs_vals
     div_vals =  np.array([0.229, 0.224, 0.225])
     res_im = res_im / div_vals
-    
  
     res_im = res_im.astype(np.float32)
     # Part 3.2
@@ -57,11 +49,8 @@ def preprocessImage(image): # input is of type PIL Image
     return feature_vector
 
 def intersectionArea(proposal, truth):
-    rect_p = (proposal[0], proposal[1], proposal[0] + proposal[2], proposal[1] + proposal[3])
-    rect_t = (truth[0], truth[1], truth[0] + truth[2], truth[1] + truth[3])
-
-    mmdif_x = min(rect_p[2], rect_t[2]) - max(rect_p[0], rect_t[0])
-    mmdif_y = min(rect_p[3], rect_t[3]) - max(rect_p[1], rect_t[1])
+    mmdif_x = min(proposal[2], truth[2]) - max(proposal[0], truth[0])
+    mmdif_y = min(proposal[3], truth[3]) - max(proposal[1], truth[1])
 
     if mmdif_x > 0 and mmdif_y > 0:
         return mmdif_x * mmdif_y
@@ -69,10 +58,7 @@ def intersectionArea(proposal, truth):
         return 0
 
 def unionArea(proposal, truth):
-    rect_p = (proposal[0], proposal[1], proposal[0] + proposal[2], proposal[1] + proposal[3])
-    rect_t = (truth[0], truth[1], truth[0] + truth[2], truth[1] + truth[3])
-
-    return abs(rect_p[2] - rect_p[0]) * abs(rect_p[3] - rect_p[1]) + abs(rect_t[2] - rect_t[0]) * abs(rect_t[3] - rect_t[1]) - intersectionArea(proposal, truth)
+    return abs(proposal[2] - proposal[0]) * abs(proposal[3] - proposal[1]) + abs(truth[2] - truth[0]) * abs(truth[3] - truth[1]) - intersectionArea(proposal, truth)
 
 def localizationAccuracy(proposal, truth):
     return intersectionArea(proposal, truth) / float(unionArea(proposal, truth))
@@ -129,7 +115,6 @@ for i in unique_labels:
     new_train_labels = np.asarray(t_class_names)
     new_train_labels[new_train_labels != i] = 0
     new_train_labels[new_train_labels == i] = 1
-    print(new_train_labels)
     # Train binary SVM
     # TODO: Experiment with gamma value
     bsvm_i = SVC(probability=True, random_state=None)
@@ -144,8 +129,7 @@ edge_detection = cv2.ximgproc.createStructuredEdgeDetection(rootDirTest + "model
 test_predictions = []
 object_proposals_predicted = []
 
-
-for i in range(99):
+for i in range(100):
     print("Test image " + str(i), file=open("output.txt", "a"))
 
     # 5.1: Create edge boxes for each test image
@@ -181,9 +165,7 @@ for i in range(99):
     # 5.2: Localization result
     predictions_i = []
     for j in range(len(bsvm)):
-        preds = bsvm[j].predict_proba(test_features_i)
-        print(preds[:, 1], file=open("output.txt", "a"))
-        
+        preds = bsvm[j].predict_proba(test_features_i)        
         predictions_i.append(preds[:, 1])
      
     predictions_i = np.asarray(predictions_i)
@@ -191,7 +173,6 @@ for i in range(99):
     print(best_prediction, file=open("output.txt", "a"))
    
     test_predictions.append(best_prediction)
-
 
 test_predictions = np.asarray(test_predictions)
 object_proposals_predicted = np.asarray(object_proposals_predicted)
@@ -210,31 +191,30 @@ test_proposals = test_data[:, 1:].astype(np.int)
 
 # Validation statistics 1: Confusion matrix, precision, recall, f-score
 # Replace labels with integers corresponding indices in unique_labels array
-new_test_labels = test_labels
 index = 0
 for i in unique_labels:
-    new_test_labels[new_test_labels == i] = index
+    test_labels[test_labels == i] = index
     index += 1
 
-new_test_labels = np.asarray(new_test_labels)
-
-all_classes = unique_labels
+test_labels = test_labels.astype(np.int)
+test_proposals = np.asarray(test_proposals).astype(np.int)
 statistics = []
-for i in range(len(unique_labels)):
-    new_predictions = test_predictions[:, 0]
-    new_predictions[new_predictions != i] = 0
+for i in range(10):
+    new_predictions = test_predictions[:, 0].copy()
+    new_predictions[new_predictions != i] = -1
     new_predictions[new_predictions == i] = 1
+    new_predictions[new_predictions == -1] = 0
 
-    new_truth = new_test_labels
-    new_truth[new_truth != i] = 0
+    new_truth = test_labels.copy().astype(np.int)
+    new_truth[new_truth != i] = -1
     new_truth[new_truth == i] = 1
-    new_truth = new_truth.astype(np.int)
+    new_truth[new_truth == -1] = 0
 
     confusion_matrix = confusionMatrix(new_predictions, new_truth)
-    recall = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fn"] + 1) # to prevent division by zero
-    precision = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fp"] + 1) # to prevent division by zero
-    f_score = 2 * recall * precision / float(recall + precision + 1) # to prevent division by zero
-    statistics.append([confusion_matrix, precision, recall, f_score])
+    precision = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fp"] + 0.000000001) # to prevent division by zero
+    recall = confusion_matrix["tp"] / float(confusion_matrix["tp"] + confusion_matrix["fn"] + 0.000000001) # to prevent division by zero
+    f_score = 2 * recall * precision / float(recall + precision + 0.000000001) # to prevent division by zero
+    statistics.append({"class_index": i, "cm": confusion_matrix, "precision": precision, "recall": recall, "f": f_score})
 
 # Validation statistics 2: Overall Accuracy & Localization Accuracy
 correct_label_count = 0
@@ -242,9 +222,9 @@ localization_accuracies = []
 for i in range(len(test_predictions)):
     prediction = test_predictions[i]
     label_predicted = prediction[0]
-    object_proposal = object_proposals_predicted[i, prediction[1]]
+    x, y, w, h = object_proposals_predicted[i, prediction[1]]
 
-    localization_accuracy = localizationAccuracy(object_proposal, test_proposals[i])
+    localization_accuracy = localizationAccuracy([x, y, x + w, y + h], test_proposals[i])
     localization_accuracies.append(localization_accuracy)
 
     if label_predicted == test_labels[i]:
