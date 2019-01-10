@@ -6,12 +6,10 @@ import torch
 import sys
 import os
 import sklearn
+
 from sklearn.svm import SVC
 import pickle
 
-
-import matplotlib.pyplot as plt
-from sklearn import svm, datasets
 
 
 sys.path.insert(0, 'data/')
@@ -28,8 +26,19 @@ def preprocessImage(image): # input is of type PIL Image
     padded_im = np.asarray(padded_im)
     res_im = cv2.resize(padded_im, dsize=(224, 224), interpolation=cv2.INTER_LANCZOS4)  # resize to 224x224 using Lanczos interpolation
     res_im = np.asarray(res_im)
-    res_im = res_im.astype(np.float32)
+   
+   
+ 
+   
+   
+    res_im = res_im /255
+    subs_vals = np.array([0.485, 0.456, 0.406])
+    res_im = res_im - subs_vals
+    div_vals =  np.array([0.229, 0.224, 0.225])
+    res_im = res_im / div_vals
     
+ 
+    res_im = res_im.astype(np.float32)
     # Part 3.2
     # Feature extraction
     # append a dimension to indicate batch_size, which is one
@@ -81,27 +90,10 @@ def confusionMatrix(predictions, truth):
             confusion_matrix["fn"] = confusion_matrix["fn"] + 1
     return confusion_matrix
 
-def plotSVC(title):
-    # create a mesh to plot in
-    x_min, x_max = X[:, 0].min() — 1, X[:, 0].max() + 1
-    y_min, y_max = X[:, 1].min() — 1, X[:, 1].max() + 1
-    h = (x_max / x_min)/100
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-    np.arange(y_min, y_max, h))
-    plt.subplot(1, 1, 1)
-    Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
-    plt.xlabel(‘Sepal length’)
-    plt.ylabel(‘Sepal width’)
-    plt.xlim(xx.min(), xx.max())
-    plt.title(title)
-    plt.show()
 
 # The sample train data, this must be converted to the original directory after all process finished
 rootDir = 'data/train/'
-model = resnet.resnet50()
+model = resnet.resnet50(pretrained=True)
 model.eval()
 
 t_class_names = []
@@ -137,11 +129,11 @@ for i in unique_labels:
     new_train_labels = np.asarray(t_class_names)
     new_train_labels[new_train_labels != i] = 0
     new_train_labels[new_train_labels == i] = 1
-
+    print(new_train_labels)
     # Train binary SVM
     # TODO: Experiment with gamma value
-    bsvm_i = SVC(prob1ability=True)
-    bsvm_i.fit(t_feature_vectors, new_train_labels)
+    bsvm_i = SVC(probability=True, random_state=None)
+    bsvm_i=bsvm_i.fit(t_feature_vectors, new_train_labels)
     bsvm.append(bsvm_i)
 
 print("Training complete. Starting test phase...")
@@ -151,7 +143,7 @@ rootDirTest = 'data/test/'
 edge_detection = cv2.ximgproc.createStructuredEdgeDetection(rootDirTest + "model.yml.gz")
 test_predictions = []
 object_proposals_predicted = []
-for i in range(10):
+for i in range(99):
     print("Test image " + str(i))
     # 5.1: Create edge boxes for each test image
     image = cv2.imread(rootDirTest + 'images/' + str(i) + '.jpeg')    
@@ -187,11 +179,14 @@ for i in range(10):
     predictions_i = []
     for j in range(len(bsvm)):
         preds = bsvm[j].predict_proba(test_features_i)
+        print(preds[:, 1])
         predictions_i.append(preds[:, 1])
     
     predictions_i = np.asarray(predictions_i)
     best_prediction = np.unravel_index(np.argmax(predictions_i, axis=None), predictions_i.shape)
+    print(best_prediction)
     test_predictions.append(best_prediction)
+
 
 test_predictions = np.asarray(test_predictions)
 object_proposals_predicted = np.asarray(object_proposals_predicted)
