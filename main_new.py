@@ -76,6 +76,24 @@ def confusionMatrix(predictions, truth):
             confusion_matrix["fn"] = confusion_matrix["fn"] + 1
     return confusion_matrix
 
+def plotSVC(title):
+    # create a mesh to plot in
+    x_min, x_max = X[:, 0].min() — 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() — 1, X[:, 1].max() + 1
+    h = (x_max / x_min)/100
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+    np.arange(y_min, y_max, h))
+    plt.subplot(1, 1, 1)
+    Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
+    plt.xlabel(‘Sepal length’)
+    plt.ylabel(‘Sepal width’)
+    plt.xlim(xx.min(), xx.max())
+    plt.title(title)
+    plt.show()
+
 # The sample train data, this must be converted to the original directory after all process finished
 rootDir = 'data/train/'
 model = resnet.resnet50()
@@ -117,7 +135,7 @@ for i in unique_labels:
 
     # Train binary SVM
     # TODO: Experiment with gamma value
-    bsvm_i = SVC(probability=True)
+    bsvm_i = SVC(prob1ability=True)
     bsvm_i.fit(t_feature_vectors, new_train_labels)
     bsvm.append(bsvm_i)
 
@@ -173,6 +191,7 @@ for i in range(10):
 test_predictions = np.asarray(test_predictions)
 object_proposals_predicted = np.asarray(object_proposals_predicted)
 print("Testing complete. Starting validation phase...")
+
 # Part 6: Validation
 # Read test labels
 test_data = []
