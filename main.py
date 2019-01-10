@@ -84,7 +84,7 @@ model.eval()
 
 t_class_names = []
 t_feature_vectors = []
-
+print("Starting train phase...")
 # Part 3.1
 # Data Reading
 # Getting the training data
@@ -92,7 +92,6 @@ t_feature_vectors = []
 for dirName, subdirList, fileList in os.walk(rootDir):
     # print('Found directory: %s' % dirName)
     class_name = dirName[len(rootDir):]
-    print('\t%s' % class_name) 
     for fname in fileList:
         # print('\t%s' % fname) 
         image = Image.open(dirName + '/' + fname).convert('RGB')    
@@ -232,9 +231,10 @@ for i in range(len(test_predictions)):
 
 overall_accuracy = correct_label_count / float(len(test_predictions))
 localization_accuracies = np.asarray(localization_accuracies)
-print("Statistics -> CM, Precision, Recall, F-Score: ")
-print(statistics)
-print("Overall Accuracy: ")
-print(overall_accuracy)
-print("Localization Accuracies: ")
-print(localization_accuracies)
+print("Statistics -> CM, Precision, Recall, F-Score: ", file=open("output.txt", "a"))
+print(statistics, file=open("output.txt", "a"))
+print("Overall Accuracy: ", file=open("output.txt", "a"))
+print(overall_accuracy, file=open("output.txt", "a"))
+print("Localization Accuracies: ", file=open("output.txt", "a"))
+print(localization_accuracies, file=open("output.txt", "a"))
+print("Execution completed.")

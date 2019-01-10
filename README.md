@@ -1,3 +1,5 @@
 # CS484P_R1
 
-Saksoy verdi sakoyla alınır.
+Bilkent University Fall 2018 CS 484: Image Analysis Course Project
+
+Object Localization and Classification Using Edge Boxes and ResNet
