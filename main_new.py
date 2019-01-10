@@ -9,6 +9,11 @@ import sklearn
 from sklearn.svm import SVC
 import pickle
 
+
+import matplotlib.pyplot as plt
+from sklearn import svm, datasets
+
+
 sys.path.insert(0, 'data/')
 import resnet
 
